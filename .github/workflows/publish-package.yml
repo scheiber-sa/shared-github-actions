@@ -6,7 +6,7 @@ on:
       node_version:
         description: "The Node.js version to use"
         required: false
-        default: "20"
+        default: "24"
         type: string
       scope:
         description: "The npm scope for the package (e.g. @your-org)"
@@ -37,10 +37,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node_version }}
           registry-url: "https://npm.pkg.github.com"
