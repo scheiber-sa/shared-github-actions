@@ -85,7 +85,7 @@ jobs:
 
       - id: build-publish
         name: Build and Publish Storybook
-        uses: ./.github/actions/deploy-storybook
+        uses: scheiber-sa/shared-github-actions/deploy-storybook@master
         with:
           path: ${{ inputs.storybook-path }}
           install_command: ${{ inputs.install-command }}
