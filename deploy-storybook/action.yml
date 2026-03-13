@@ -28,7 +28,7 @@ runs:
   steps:
     - name: Checkout if required
       if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: "Build"
       shell: bash
@@ -39,7 +39,7 @@ runs:
         echo "::endgroup::"
 
     - name: "Upload artifact"
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: ${{ inputs.path }}
 
