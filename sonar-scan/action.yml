@@ -1,0 +1,49 @@
+name: "Run Sonar Scan"
+description: "Run Sonarqube code quality scan using Scanwise"
+inputs:
+  checkout:
+    description: "Specifies if this action should checkout the code"
+    required: false
+    default: "true"
+  sonar-source-path:
+    description: "Path to the source code for Sonar scan"
+    required: false
+    default: "src"
+  reports-scopes:
+    description: "JSON array of report scopes"
+    required: false
+    default: '["overall"]'
+  reports-extensions:
+    description: "JSON array of report file extensions"
+    required: false
+    default: '["html"]'
+  reports-retention-days:
+    description: "Number of days to retain reports"
+    required: false
+    default: "7"
+  new-code-n-days:
+    description: "Period for new code analysis"
+    required: false
+    default: "3d"
+  pre-scan-script:
+    description: "Script to run before scanning (e.g., install dependencies and run tests)"
+    required: false
+    default: "npm install && npm run test:ci"
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout if required
+      if: ${{ inputs.checkout == 'true' }}
+      uses: actions/checkout@v6
+
+    - name: Run Scanwise Sonar Scan
+      uses: VIDADv1/scanwise@v1
+      with:
+        sonar-source-path: ${{ inputs.sonar-source-path }}
+        reports-scopes: ${{ inputs.reports-scopes }}
+        reports-extensions: ${{ inputs.reports-extensions }}
+        reports-retention-days: ${{ inputs.reports-retention-days }}
+        new-code-n-days: ${{ inputs.new-code-n-days }}
+        pre-scan-script: ${{ inputs.pre-scan-script }}
