@@ -1,0 +1,126 @@
+name: "Deploy Storybook and Run Visual Tests"
+description: "Deploy Storybook to GitHub Pages and run Playwright visual tests"
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version to use"
+        required: false
+        default: "24.x"
+        type: string
+      storybook-path:
+        description: "Path to the storybook build output"
+        required: false
+        default: "storybook-static"
+        type: string
+      install-command:
+        description: "Command to install dependencies"
+        required: false
+        default: "npm install"
+        type: string
+      build-command:
+        description: "Command to build storybook"
+        required: false
+        default: "npm run build-storybook"
+        type: string
+      snapshots-command:
+        description: "Command to initialize snapshots"
+        required: false
+        default: "npm run visual-test:snapshots-all"
+        type: string
+      test-command:
+        description: "Command to run visual tests"
+        required: false
+        default: "npm run visual-test"
+        type: string
+      test-base-url:
+        description: "Base URL for visual tests"
+        required: false
+        default: ""
+        type: string
+      test-report-path:
+        description: "Path to test report JSON files"
+        required: false
+        default: "./ctrf/*.json"
+        type: string
+      playwright-cache-path:
+        description: "Path to cache Playwright binaries"
+        required: false
+        default: "~/.cache/ms-playwright"
+        type: string
+      ci:
+        description: "Set CI environment variable"
+        required: false
+        default: true
+        type: boolean
+      update-snapshots:
+        description: "Force update snapshots"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TEST_BASE_URL: ${{ inputs.test-base-url }}
+  CI: ${{ inputs.ci }}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy-and-test:
+    environment:
+      name: github-pages
+      url: ${{ steps.build-publish.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - id: build-publish
+        name: Build and Publish Storybook
+        uses: ./.github/actions/deploy-storybook
+        with:
+          path: ${{ inputs.storybook-path }}
+          install_command: ${{ inputs.install-command }}
+          build_command: ${{ inputs.build-command }}
+
+      - name: Cache Playwright binaries
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ${{ inputs.playwright-cache-path }}
+          key: playwright/${{ github.repository }}/${{ github.ref }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Set up cache for test results
+        id: test-results-cache
+        uses: actions/cache@v5
+        with:
+          key: cache/${{ github.repository }}/${{ github.ref }}
+          restore-keys: cache/${{ github.repository }}/refs/heads/develop
+          path: tests/**
+
+      - name: Initialize snapshots
+        if: steps.test-results-cache.outputs.cache-hit != 'true' || inputs.update-snapshots == true
+        run: ${{ inputs.snapshots-command }}
+
+      - name: Run visual tests
+        run: ${{ inputs.test-command }}
+
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: ${{ inputs.test-report-path }}
+          github-report: true
+        if: always()
