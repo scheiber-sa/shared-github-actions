@@ -1,5 +1,4 @@
-name: "Deploy Storybook and Run Visual Tests"
-description: "Deploy Storybook to GitHub Pages and run Playwright visual tests"
+name: Deploy Storybook and Run Visual Tests
 
 on:
   workflow_call:
