@@ -28,7 +28,22 @@ inputs:
   pre-scan-script:
     description: "Script to run before scanning (e.g., install dependencies and run tests)"
     required: false
-    default: "npm install && npm run test:ci"
+    default: |
+      echo "📥 Restoring coverage from /tmp/coverage after git clean..."
+      mkdir -p coverage
+      cp /tmp/coverage/lcov.info coverage/lcov.info
+      echo ""
+      echo "📁 Coverage restored:"
+      ls -lh coverage/
+      echo ""
+      if [ -f "coverage/lcov.info" ]; then
+        echo "✅ Coverage file ready for scanning"
+        echo "📊 File size: $(du -h coverage/lcov.info | cut -f1)"
+        echo "📄 Source files: $(grep -c '^SF:' coverage/lcov.info || echo 0)"
+      else
+        echo "❌ Failed to restore coverage file!"
+        exit 1
+      fi
 
 runs:
   using: "composite"

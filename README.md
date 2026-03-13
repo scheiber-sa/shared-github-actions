@@ -59,7 +59,7 @@ Runs Sonarqube code quality scan using Scanwise.
 | `reports-extensions`     | JSON array of report file extensions                                   | false    | `["html"]`                     |
 | `reports-retention-days` | Number of days to retain reports                                       | false    | `7`                            |
 | `new-code-n-days`        | Period for new code analysis                                           | false    | `3d`                           |
-| `pre-scan-script`        | Script to run before scanning (e.g., install dependencies and tests)  | false    | `npm install && npm run test:ci` |
+| `pre-scan-script`        | Script to run before scanning (restores coverage and validates it)    | false    | Coverage restoration script     |
 
 #### Usage
 
@@ -72,7 +72,37 @@ jobs:
         uses: scheiber-sa/shared-github-actions/sonar-scan@main
         with:
           sonar-source-path: src
-          pre-scan-script: npm install && npm run test:ci
+```
+
+### Setup Node and Install Dependencies
+
+**Path:** `scheiber-sa/shared-github-actions/setup-node-and-dependencies@main`
+
+Sets up Node.js and installs npm dependencies with support for private package registry and optional Python setup.
+
+#### Inputs
+
+| Name              | Description                                       | Required | Default |
+| ----------------- | ------------------------------------------------- | -------- | ------- |
+| `node-version`    | Node.js version to use                            | true     | –       |
+| `github-token`    | GitHub token for accessing private packages       | true     | –       |
+| `python`          | Whether to setup Python                           | false    | `false` |
+| `python-version`  | Python version to use                             | false    | `3.10`  |
+
+#### Usage
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node and Install Dependencies
+        uses: scheiber-sa/shared-github-actions/setup-node-and-dependencies@main
+        with:
+          node-version: "24.x"
+          github-token: ${{ secrets.GH_TOKEN }}
+          python: "true"
+          python-version: "3.10"
 ```
 
 ---

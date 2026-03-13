@@ -1,0 +1,43 @@
+name: 'Setup Node and Install Dependencies'
+description: 'Sets up Node.js and installs npm dependencies with private package registry'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: true
+  github-token:
+    description: 'GitHub token for accessing private packages'
+    required: true
+  python:
+    description: 'Whether to setup Python'
+    required: false
+    default: 'false'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.10'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Setup Python
+      if: ${{ inputs.python == 'true' }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Configure npm for private packages
+      shell: bash
+      run: |
+        echo "@scheiber-sa:registry=https://npm.pkg.github.com" >> ~/.npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ inputs.github-token }}" >> ~/.npmrc
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
