@@ -82,12 +82,13 @@ Sets up Node.js and installs npm dependencies with support for private package r
 
 #### Inputs
 
-| Name              | Description                                       | Required | Default |
-| ----------------- | ------------------------------------------------- | -------- | ------- |
-| `node-version`    | Node.js version to use                            | true     | –       |
-| `github-token`    | GitHub token for accessing private packages       | true     | –       |
-| `python`          | Whether to setup Python                           | false    | `false` |
-| `python-version`  | Python version to use                             | false    | `3.10`  |
+| Name              | Description                                            | Required | Default                         |
+| ----------------- | ------------------------------------------------------ | -------- | ------------------------------- |
+| `node-version`    | Node.js version to use                                 | true     | –                               |
+| `github-token`    | GitHub token for accessing private packages            | false    | `${{ secrets.DESIGN_SYSTEM_TOKEN }}` |
+| `python`          | Whether to setup Python                                | false    | `false`                         |
+| `python-version`  | Python version to use                                  | false    | `3.10`                          |
+| `configure-npm`   | Whether to configure npm for private packages          | false    | `true`                          |
 
 #### Usage
 
@@ -100,9 +101,10 @@ jobs:
         uses: scheiber-sa/shared-github-actions/setup-node-and-dependencies@main
         with:
           node-version: "24.x"
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
           python: "true"
           python-version: "3.10"
+          configure-npm: "true"
 ```
 
 ---
