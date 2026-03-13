@@ -49,7 +49,7 @@ jobs:
 
 ### Publish Package to GitHub Packages
 
-**Path:** `scheiber-sa/shared-github-actions/.github/workflows/publish-package.yml@main`
+**Path:** `scheiber-sa/shared-github-actions/.github/workflows/publish-design-system-package.yml@main`
 
 Builds and publishes an npm package to GitHub Packages. Trigger this reusable workflow from your repository's release workflow.
 
@@ -57,7 +57,7 @@ Builds and publishes an npm package to GitHub Packages. Trigger this reusable wo
 
 | Name                | Description                                      | Required | Default       |
 | ------------------- | ------------------------------------------------ | -------- | ------------- |
-| `node_version`      | The Node.js version to use                       | false    | `20`          |
+| `node_version`      | The Node.js version to use                       | false    | `24`          |
 | `scope`             | The npm scope for the package (e.g. `@your-org`) | true     | –             |
 | `working_directory` | The working directory from which to publish      | false    | `dist`        |
 | `install_command`   | The command to install dependencies              | false    | `npm ci`      |
@@ -72,9 +72,9 @@ on:
 
 jobs:
   publish:
-    uses: scheiber-sa/shared-github-actions/.github/workflows/publish-package.yml@main
+    uses: scheiber-sa/shared-github-actions/.github/workflows/publish-design-system-package.yml@main
     with:
       scope: "@scheiber-sa"
-      node_version: "20"
+      node_version: "24"
     secrets: inherit
 ```
