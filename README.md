@@ -43,9 +43,83 @@ jobs:
           path: dist/storybook
 ```
 
+### Run Sonar Scan
+
+**Path:** `scheiber-sa/shared-github-actions/sonar-scan@main`
+
+Runs Sonarqube code quality scan using Scanwise.
+
+#### Inputs
+
+| Name                     | Description                                                            | Required | Default                        |
+| ------------------------ | ---------------------------------------------------------------------- | -------- | ------------------------------ |
+| `checkout`               | Specifies if this action should checkout the code                      | false    | `true`                         |
+| `sonar-source-path`      | Path to the source code for Sonar scan                                 | false    | `src`                          |
+| `reports-scopes`         | JSON array of report scopes                                            | false    | `["overall"]`                  |
+| `reports-extensions`     | JSON array of report file extensions                                   | false    | `["html"]`                     |
+| `reports-retention-days` | Number of days to retain reports                                       | false    | `7`                            |
+| `new-code-n-days`        | Period for new code analysis                                           | false    | `3d`                           |
+| `pre-scan-script`        | Script to run before scanning (e.g., install dependencies and tests)  | false    | `npm install && npm run test:ci` |
+
+#### Usage
+
+```yaml
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Sonar Scan
+        uses: scheiber-sa/shared-github-actions/sonar-scan@main
+        with:
+          sonar-source-path: src
+          pre-scan-script: npm install && npm run test:ci
+```
+
 ---
 
 ## Workflows
+
+### Deploy Storybook and Run Visual Tests
+
+**Path:** `scheiber-sa/shared-github-actions/.github/workflows/deploy-storybook-and-visual-tests.yml@main`
+
+Deploy Storybook to GitHub Pages and run Playwright visual tests with caching and test reporting.
+
+#### Inputs
+
+| Name                   | Description                                   | Required | Default                        |
+| ---------------------- | --------------------------------------------- | -------- | ------------------------------ |
+| `node-version`         | Node.js version to use                        | false    | `24.x`                         |
+| `storybook-path`       | Path to the storybook build output            | false    | `storybook-static`             |
+| `install-command`      | Command to install dependencies               | false    | `npm install`                  |
+| `build-command`        | Command to build storybook                    | false    | `npm run build-storybook`      |
+| `snapshots-command`    | Command to initialize snapshots               | false    | `npm run visual-test:snapshots-all` |
+| `test-command`         | Command to run visual tests                   | false    | `npm run visual-test`          |
+| `test-base-url`        | Base URL for visual tests                     | false    | `""`                           |
+| `test-report-path`     | Path to test report JSON files                | false    | `./ctrf/*.json`                |
+| `playwright-cache-path`| Path to cache Playwright binaries             | false    | `~/.cache/ms-playwright`       |
+| `ci`                   | Set CI environment variable                   | false    | `true`                         |
+| `update-snapshots`     | Force update snapshots                        | false    | `false`                        |
+
+#### Usage
+
+```yaml
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      update-snapshots:
+        type: boolean
+        default: false
+
+jobs:
+  deploy-test:
+    uses: scheiber-sa/shared-github-actions/.github/workflows/deploy-storybook-and-visual-tests.yml@main
+    with:
+      test-base-url: "https://your-domain.github.io/your-project/"
+      update-snapshots: ${{ github.event.inputs.update-snapshots }}
+```
 
 ### Publish Package to GitHub Packages
 
