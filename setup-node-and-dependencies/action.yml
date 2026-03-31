@@ -8,7 +8,6 @@ inputs:
   github-token:
     description: 'GitHub token for accessing private packages'
     required: false
-    default: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
   python:
     description: 'Whether to setup Python'
     required: false
