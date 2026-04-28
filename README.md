@@ -74,21 +74,18 @@ jobs:
           sonar-source-path: src
 ```
 
-### Setup Node and Install Dependencies
+### npm install
 
-**Path:** `scheiber-sa/shared-github-actions/setup-node-and-dependencies@main`
+**Path:** `scheiber-sa/shared-github-actions/npm-install@master`
 
-Sets up Node.js and installs npm dependencies with support for private package registry and optional Python setup.
+Sets up Node.js and runs `npm ci`. When `github-token` is provided, also configures npm to access the `@scheiber-sa` private registry on GitHub Packages.
 
 #### Inputs
 
-| Name              | Description                                            | Required | Default                         |
-| ----------------- | ------------------------------------------------------ | -------- | ------------------------------- |
-| `node-version`    | Node.js version to use                                 | true     | –                               |
-| `github-token`    | GitHub token for accessing private packages            | false    | `${{ secrets.DESIGN_SYSTEM_TOKEN }}` |
-| `python`          | Whether to setup Python                                | false    | `false`                         |
-| `python-version`  | Python version to use                                  | false    | `3.10`                          |
-| `configure-npm`   | Whether to configure npm for private packages          | false    | `true`                          |
+| Name           | Description                                                                          | Required | Default    |
+| -------------- | ------------------------------------------------------------------------------------ | -------- | ---------- |
+| `node-version` | Node.js version to use                                                               | false    | `latest`   |
+| `github-token` | GitHub token for accessing private packages. Enables `@scheiber-sa` registry when set. | false    | –          |
 
 #### Usage
 
@@ -97,14 +94,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Node and Install Dependencies
-        uses: scheiber-sa/shared-github-actions/setup-node-and-dependencies@main
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        uses: scheiber-sa/shared-github-actions/npm-install@master
         with:
           node-version: "24.x"
           github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
-          python: "true"
-          python-version: "3.10"
-          configure-npm: "true"
 ```
 
 ---
