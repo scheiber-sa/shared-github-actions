@@ -74,6 +74,39 @@ jobs:
           sonar-source-path: src
 ```
 
+### Release
+
+**Path:** `scheiber-sa/shared-github-actions/release@master`
+
+Validates a semver tag, generates release notes from git history and package metadata, and creates a GitHub Release via `softprops/action-gh-release`.
+
+> **Requires** `permissions: contents: write` on the calling job.
+
+#### Inputs
+
+| Name                 | Description                                              | Required | Default         |
+| -------------------- | -------------------------------------------------------- | -------- | --------------- |
+| `artifact-name`      | Name of the package artifact to download                 | false    | `dist-package`  |
+| `packages-path`      | Directory where the package artifact will be downloaded  | false    | `packages/`     |
+| `write-step-summary` | Write a summary to the GitHub Actions step summary       | false    | `true`          |
+
+#### Usage
+
+```yaml
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    permissions:
+      contents: write
+    steps:
+      - name: Release
+        uses: scheiber-sa/shared-github-actions/release@master
+```
+
+---
+
 ### npm install
 
 **Path:** `scheiber-sa/shared-github-actions/npm-install@master`
