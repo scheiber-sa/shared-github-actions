@@ -84,11 +84,18 @@ Validates a semver tag, generates release notes from git history and package met
 
 #### Inputs
 
-| Name                 | Description                                              | Required | Default         |
-| -------------------- | -------------------------------------------------------- | -------- | --------------- |
-| `artifact-name`      | Name of the package artifact to download                 | false    | `dist-package`  |
-| `packages-path`      | Directory where the package artifact will be downloaded  | false    | `packages/`     |
-| `write-step-summary` | Write a summary to the GitHub Actions step summary       | false    | `true`          |
+| Name            | Description                                             | Required | Default        |
+| --------------- | ------------------------------------------------------- | -------- | -------------- |
+| `artifact-name` | Name of the package artifact to download                | false    | `dist-package` |
+| `packages-path` | Directory where the package artifact will be downloaded | false    | `packages/`    |
+
+#### Outputs
+
+| Name           | Description                          |
+| -------------- | ------------------------------------ |
+| `tag`          | The validated release tag (e.g. `v1.2.3`) |
+| `is_prerelease`| Whether the release is a prerelease (`true`/`false`) |
+| `url`          | URL of the created GitHub Release    |
 
 #### Usage
 

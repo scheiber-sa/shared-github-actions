@@ -10,10 +10,17 @@ inputs:
     description: 'Directory where the package artifact will be downloaded'
     required: false
     default: 'packages/'
-  write-step-summary:
-    description: 'Whether to write a summary to the GitHub Actions step summary'
-    required: false
-    default: 'true'
+
+outputs:
+  tag:
+    description: 'The validated release tag (e.g. v1.2.3)'
+    value: ${{ steps.tag.outputs.tag }}
+  is_prerelease:
+    description: 'Whether the release is a prerelease (true/false)'
+    value: ${{ steps.tag.outputs.is_prerelease }}
+  url:
+    description: 'URL of the created GitHub Release'
+    value: ${{ steps.create_release.outputs.url }}
 
 runs:
   using: 'composite'
@@ -97,7 +104,7 @@ runs:
         fail_on_unmatched_files: true
 
     - name: Release summary
-      if: ${{ always() && inputs.write-step-summary == 'true' }}
+      if: always()
       shell: bash
       run: |
         if [ "${{ steps.create_release.outcome }}" = "success" ]; then
