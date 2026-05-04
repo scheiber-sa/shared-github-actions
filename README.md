@@ -51,15 +51,14 @@ Runs Sonarqube code quality scan using Scanwise.
 
 #### Inputs
 
-| Name                     | Description                                                            | Required | Default                        |
-| ------------------------ | ---------------------------------------------------------------------- | -------- | ------------------------------ |
-| `checkout`               | Specifies if this action should checkout the code                      | false    | `true`                         |
-| `sonar-source-path`      | Path to the source code for Sonar scan                                 | false    | `src`                          |
-| `reports-scopes`         | JSON array of report scopes                                            | false    | `["overall"]`                  |
-| `reports-extensions`     | JSON array of report file extensions                                   | false    | `["html"]`                     |
-| `reports-retention-days` | Number of days to retain reports                                       | false    | `7`                            |
-| `new-code-n-days`        | Period for new code analysis                                           | false    | `3d`                           |
-| `pre-scan-script`        | Script to run before scanning (restores coverage and validates it)    | false    | Coverage restoration script     |
+| Name                     | Description                                                                                                     | Required | Default       |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | -------- | ------------- |
+| `sonar-source-path`      | Path to the source code for Sonar scan                                                                          | false    | `src`         |
+| `reports-scopes`         | JSON array of report scopes                                                                                     | false    | `["overall"]` |
+| `reports-extensions`     | JSON array of report file extensions                                                                            | false    | `["html"]`    |
+| `reports-retention-days` | Number of days to retain reports                                                                                | false    | `7`           |
+| `new-code-n-days`        | Period for new code analysis                                                                                    | false    | `3d`          |
+| `coverage-artifact`      | Name of the coverage artifact to download. When set, downloads it to `/tmp/coverage/` before scanning.        | false    | –             |
 
 #### Usage
 
