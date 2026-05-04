@@ -121,10 +121,12 @@ Sets up Node.js and runs `npm ci`. When `github-token` is provided, also configu
 
 #### Inputs
 
-| Name           | Description                                                                          | Required | Default    |
-| -------------- | ------------------------------------------------------------------------------------ | -------- | ---------- |
-| `node-version` | Node.js version to use                                                               | false    | `latest`   |
-| `github-token` | GitHub token for accessing private packages. Enables `@scheiber-sa` registry when set. | false    | –          |
+| Name           | Description                                                                             | Required | Default  |
+| -------------- | --------------------------------------------------------------------------------------- | -------- | -------- |
+| `node-version` | Node.js version to use                                                                  | false    | `latest` |
+| `github-token` | GitHub token for accessing private packages. Enables `@scheiber-sa` registry when set. | false    | –        |
+| `registry-url` | Registry URL to pass to `actions/setup-node`                                            | false    | –        |
+| `scope`        | npm scope to pass to `actions/setup-node`                                               | false    | –        |
 
 #### Usage
 
