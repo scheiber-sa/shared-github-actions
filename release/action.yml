@@ -2,14 +2,10 @@ name: 'Release'
 description: 'Validates a semver tag, generates release notes from git history and package metadata, and creates a GitHub Release'
 
 inputs:
-  artifact-name:
-    description: 'Name of the package artifact to download'
+  package-artifact:
+    description: 'Name of the package artifact to download and attach to the release. When omitted, the release is created without file attachments.'
     required: false
-    default: 'dist-package'
-  packages-path:
-    description: 'Directory where the package artifact will be downloaded'
-    required: false
-    default: 'packages/'
+    default: ''
 
 outputs:
   tag:
@@ -25,11 +21,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-
     - name: Validate tag and detect prerelease
       id: tag
       shell: bash
@@ -48,20 +39,20 @@ runs:
         fi
 
     - name: Download package
+      if: ${{ inputs.package-artifact != '' }}
       uses: actions/download-artifact@v8
       with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ inputs.packages-path }}
+        name: ${{ inputs.package-artifact }}
+        path: packages/
 
     - name: Find package file
       id: find_package
+      if: ${{ inputs.package-artifact != '' }}
       shell: bash
       run: |
-        PACKAGES_PATH="${{ inputs.packages-path }}"
-        PACKAGES_PATH="${PACKAGES_PATH%/}/"
-        PACKAGE_FILE=$(ls "${PACKAGES_PATH}"*.tar.gz 2>/dev/null | head -1)
+        PACKAGE_FILE=$(ls packages/*.tar.gz 2>/dev/null | head -1)
         if [ -z "$PACKAGE_FILE" ]; then
-          echo "❌ No .tar.gz file found in ${PACKAGES_PATH}"
+          echo "❌ No .tar.gz file found in packages/"
           exit 1
         fi
         echo "package_file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
@@ -84,12 +75,14 @@ runs:
           echo "## Initial Release" > release_notes.md
           echo "" >> release_notes.md
         fi
-        echo "## Package Information" >> release_notes.md
+        echo "## Release Information" >> release_notes.md
         echo "" >> release_notes.md
         echo "- **Built from commit:** [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${GITHUB_SHA})" >> release_notes.md
-        echo "- **Build Timestamp:** $(tar -xzOf ${PACKAGE_FILE} ./BUILD_VERSION 2>/dev/null || echo 'N/A')" >> release_notes.md
-        echo "- **Git Branch:** $(tar -xzOf ${PACKAGE_FILE} ./GIT_BRANCH 2>/dev/null || echo 'N/A')" >> release_notes.md
-        echo "- **Package Size:** $(ls -lh ${PACKAGE_FILE} | awk '{print $5}')" >> release_notes.md
+        if [ -n "$PACKAGE_FILE" ]; then
+          echo "- **Build Timestamp:** $(tar -xzOf ${PACKAGE_FILE} ./BUILD_VERSION 2>/dev/null || echo 'N/A')" >> release_notes.md
+          echo "- **Git Branch:** $(tar -xzOf ${PACKAGE_FILE} ./GIT_BRANCH 2>/dev/null || echo 'N/A')" >> release_notes.md
+          echo "- **Package Size:** $(ls -lh ${PACKAGE_FILE} | awk '{print $5}')" >> release_notes.md
+        fi
 
     - name: Create GitHub Release
       id: create_release
@@ -101,7 +94,7 @@ runs:
         files: ${{ steps.find_package.outputs.package_file }}
         draft: false
         prerelease: ${{ steps.tag.outputs.is_prerelease }}
-        fail_on_unmatched_files: true
+        fail_on_unmatched_files: ${{ inputs.package-artifact != '' }}
 
     - name: Release summary
       if: always()
