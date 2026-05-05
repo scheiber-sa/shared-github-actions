@@ -1,0 +1,63 @@
+name: 'Visual Tests'
+description: 'Runs Playwright visual tests against a locally served Storybook instance with binary and snapshot caching'
+
+inputs:
+  storybook-path:
+    description: 'Path to the built Storybook output to serve'
+    required: false
+    default: 'storybook-static'
+  snapshots-command:
+    description: 'Command to initialize test snapshots when no cache exists'
+    required: true
+  test-command:
+    description: 'Command to run visual tests'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache Playwright binaries
+      uses: actions/cache@v5
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright/${{ github.repository }}/${{ github.ref }}
+
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps
+
+    - name: Cache test snapshots
+      id: test-results-cache
+      uses: actions/cache@v5
+      with:
+        key: cache/${{ github.repository }}/${{ github.ref }}
+        restore-keys: cache/${{ github.repository }}/refs/heads/${{ github.event.repository.default_branch }}
+        path: tests/**
+
+    - name: Serve Storybook
+      shell: bash
+      run: npx -y serve ${{ inputs.storybook-path }} --listen 6006 &
+
+    - name: Wait for Storybook
+      shell: bash
+      run: npx -y wait-on http://localhost:6006 --timeout 60000
+
+    - name: Initialize snapshots
+      if: steps.test-results-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: ${{ inputs.snapshots-command }}
+
+    - name: Run visual tests
+      shell: bash
+      run: ${{ inputs.test-command }}
+
+    - name: Publish visual test report
+      if: always()
+      uses: ctrf-io/github-test-reporter@v1
+      with:
+        report-path: ctrf/*.json
+        github-report: true
+      env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}

@@ -115,3 +115,142 @@ jobs:
         with:
           package-artifact: dist-package
 ```
+
+---
+
+### Visual Tests
+
+**Path:** `scheiber-sa/shared-github-actions/visual-tests@master`
+
+Runs Playwright visual tests against a locally served Storybook. Handles Playwright binary caching, snapshot caching, serving, and CTRF report publishing. The caller is responsible for checkout, `npm install`, and building Storybook.
+
+> **Requires** `GITHUB_TOKEN` env on the calling step (for the CTRF reporter).
+
+#### Inputs
+
+| Name                | Description                                             | Required | Default           |
+| ------------------- | ------------------------------------------------------- | -------- | ----------------- |
+| `storybook-path`    | Path to the built Storybook output to serve             | false    | `storybook-static` |
+| `snapshots-command` | Command to initialize snapshots when no cache exists    | true     | –                 |
+| `test-command`      | Command to run visual tests                             | true     | –                 |
+
+#### Usage
+
+```yaml
+jobs:
+  visual-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup and install
+        uses: scheiber-sa/shared-github-actions/npm-install@master
+        with:
+          node-version: "24.x"
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Run visual tests
+        uses: scheiber-sa/shared-github-actions/visual-tests@master
+        with:
+          snapshots-command: npm run visual-test:snapshots-all
+          test-command: npm run visual-test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+---
+
+### Deploy Storybook to GitHub Pages
+
+**Path:** `scheiber-sa/shared-github-actions/deploy-storybook@master`
+
+Uploads a pre-built Storybook directory as a Pages artifact and deploys it. The caller is responsible for checkout, `npm install`, and building Storybook.
+
+> **Requires** `permissions: pages: write` and `id-token: write` on the calling job.
+
+#### Inputs
+
+| Name             | Description                                   | Required | Default            |
+| ---------------- | --------------------------------------------- | -------- | ------------------ |
+| `storybook-path` | Path to the built Storybook output to deploy  | false    | `storybook-static` |
+
+#### Outputs
+
+| Name       | Description                          |
+| ---------- | ------------------------------------ |
+| `page_url` | URL of the deployed GitHub Pages site |
+
+#### Usage
+
+```yaml
+jobs:
+  deploy-storybook:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup and install
+        uses: scheiber-sa/shared-github-actions/npm-install@master
+        with:
+          node-version: "24.x"
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Deploy Storybook
+        id: deploy
+        uses: scheiber-sa/shared-github-actions/deploy-storybook@master
+        with:
+          storybook-path: dist/storybook
+```
+
+---
+
+### Publish to GitHub Packages
+
+**Path:** `scheiber-sa/shared-github-actions/publish@master`
+
+Configures npm for the `@scheiber-sa` GitHub Packages registry and publishes the `dist/` directory. The caller is responsible for checkout and building.
+
+> **Requires** `NODE_AUTH_TOKEN` env on the calling step and `permissions: packages: write` on the job.
+
+#### Inputs
+
+| Name           | Description          | Required | Default  |
+| -------------- | -------------------- | -------- | -------- |
+| `node-version` | Node.js version to use | false  | `latest` |
+
+#### Usage
+
+```yaml
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build library
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        uses: scheiber-sa/shared-github-actions/publish@master
+        with:
+          node-version: "24.x"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```

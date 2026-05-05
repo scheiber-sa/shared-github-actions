@@ -1,0 +1,25 @@
+name: 'Deploy Storybook to GitHub Pages'
+description: 'Uploads a pre-built Storybook output as a Pages artifact and deploys it'
+
+inputs:
+  storybook-path:
+    description: 'Path to the built Storybook output to deploy'
+    required: false
+    default: 'storybook-static'
+
+outputs:
+  page_url:
+    description: 'URL of the deployed GitHub Pages site'
+    value: ${{ steps.deploy-pages.outputs.page_url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: ${{ inputs.storybook-path }}
+
+    - name: Deploy to GitHub Pages
+      id: deploy-pages
+      uses: actions/deploy-pages@v4
