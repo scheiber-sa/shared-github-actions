@@ -1,0 +1,25 @@
+name: 'Publish to GitHub Packages'
+description: 'Configures npm for the GitHub Packages registry and publishes the dist/ directory'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup and install
+      uses: scheiber-sa/shared-github-actions/npm-install@refactor-npm-install
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@scheiber-sa'
+
+    - name: Publish to GitHub Packages
+      shell: bash
+      run: npm publish --registry=https://npm.pkg.github.com
+      working-directory: dist
+      env:
+        NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}

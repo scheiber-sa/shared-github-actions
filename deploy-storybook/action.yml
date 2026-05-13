@@ -1,50 +1,25 @@
-name: "Deploy Storybook to GitHub Pages"
-description: "Build and deploy storybook code to GitHub pages"
+name: 'Deploy Storybook to GitHub Pages'
+description: 'Uploads a pre-built Storybook output as a Pages artifact and deploys it'
+
 inputs:
-  checkout:
-    description: "Specifies if this action should checkout the code"
+  storybook-path:
+    description: 'Path to the built Storybook output to deploy'
     required: false
-    default: "true"
-  path:
-    description: "Specifies the path of the static assets after building"
-    required: false
-    default: "dist/storybook"
-  install_command:
-    description: "Specifies the command to run the installation."
-    required: false
-    default: "npm ci"
-  build_command:
-    description: "Specifies the command to run after npm ci for the build"
-    required: false
-    default: "npm run build-storybook"
+    default: 'storybook-static'
+
 outputs:
   page_url:
-    description: "The URL of the page"
-    value: ${{ steps.deploy.outputs.page_url }}
+    description: 'URL of the deployed GitHub Pages site'
+    value: ${{ steps.deploy-pages.outputs.page_url }}
 
 runs:
-  using: "composite"
-
+  using: 'composite'
   steps:
-    - name: Checkout if required
-      if: ${{ inputs.checkout == 'true' }}
-      uses: actions/checkout@v6
-
-    - name: "Build"
-      shell: bash
-      run: |
-        echo "::group::Build"
-        ${{ inputs.install_command }}
-        ${{ inputs.build_command }}
-        echo "::endgroup::"
-
-    - name: "Upload artifact"
+    - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v4
       with:
-        path: ${{ inputs.path }}
+        path: ${{ inputs.storybook-path }}
 
-    - id: deploy
-      name: Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages
+      id: deploy-pages
       uses: actions/deploy-pages@v4
-      with:
-        token: ${{ github.token }}

@@ -1,0 +1,115 @@
+name: 'Release'
+description: 'Validates a semver tag, generates release notes from git history and package metadata, and creates a GitHub Release'
+
+inputs:
+  package-artifact:
+    description: 'Name of the package artifact to download and attach to the release. When omitted, the release is created without file attachments.'
+    required: false
+    default: ''
+
+outputs:
+  tag:
+    description: 'The validated release tag (e.g. v1.2.3)'
+    value: ${{ steps.tag.outputs.tag }}
+  is_prerelease:
+    description: 'Whether the release is a prerelease (true/false)'
+    value: ${{ steps.tag.outputs.is_prerelease }}
+  url:
+    description: 'URL of the created GitHub Release'
+    value: ${{ steps.create_release.outputs.url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate tag and detect prerelease
+      id: tag
+      shell: bash
+      run: |
+        TAG="${{ github.ref_name }}"
+        if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+|-beta\.[0-9]+|-rc\.[0-9]+)?$ ]]; then
+          echo "❌ Invalid tag format: ${TAG}"
+          echo "   Expected: v[MAJOR].[MINOR].[PATCH] or v[MAJOR].[MINOR].[PATCH]-[alpha|beta|rc].[NUMBER]"
+          exit 1
+        fi
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        if [[ "$TAG" =~ -alpha|-beta|-rc ]]; then
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Download package
+      if: ${{ inputs.package-artifact != '' }}
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.package-artifact }}
+        path: packages/
+
+    - name: Find package file
+      id: find_package
+      if: ${{ inputs.package-artifact != '' }}
+      shell: bash
+      run: |
+        PACKAGE_FILE=$(ls packages/*.tar.gz 2>/dev/null | head -1)
+        if [ -z "$PACKAGE_FILE" ]; then
+          echo "❌ No .tar.gz file found in packages/"
+          exit 1
+        fi
+        echo "package_file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
+        echo "📦 Package file: ${PACKAGE_FILE}"
+        ls -lh "${PACKAGE_FILE}"
+
+    - name: Generate release notes
+      shell: bash
+      run: |
+        TAG="${{ steps.tag.outputs.tag }}"
+        PACKAGE_FILE="${{ steps.find_package.outputs.package_file }}"
+        PREV_TAG=$(git describe --tags --abbrev=0 ${TAG}^ 2>/dev/null || echo "")
+        if [ -n "$PREV_TAG" ]; then
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          git log ${PREV_TAG}..${TAG} --pretty=format:"- %s (%h)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+        else
+          echo "## Initial Release" > release_notes.md
+          echo "" >> release_notes.md
+        fi
+        echo "## Release Information" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "- **Built from commit:** [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${GITHUB_SHA})" >> release_notes.md
+        if [ -n "$PACKAGE_FILE" ]; then
+          echo "- **Build Timestamp:** $(tar -xzOf ${PACKAGE_FILE} ./BUILD_VERSION 2>/dev/null || echo 'N/A')" >> release_notes.md
+          echo "- **Git Branch:** $(tar -xzOf ${PACKAGE_FILE} ./GIT_BRANCH 2>/dev/null || echo 'N/A')" >> release_notes.md
+          echo "- **Package Size:** $(ls -lh ${PACKAGE_FILE} | awk '{print $5}')" >> release_notes.md
+        fi
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        name: Release ${{ steps.tag.outputs.tag }}
+        body_path: release_notes.md
+        files: ${{ steps.find_package.outputs.package_file }}
+        draft: false
+        prerelease: ${{ steps.tag.outputs.is_prerelease }}
+        fail_on_unmatched_files: ${{ inputs.package-artifact != '' }}
+
+    - name: Release summary
+      if: always()
+      shell: bash
+      run: |
+        if [ "${{ steps.create_release.outcome }}" = "success" ]; then
+          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Status:** Release created successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type:** ${{ steps.tag.outputs.is_prerelease == 'true' && '🔶 Pre-release' || '✨ Stable' }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ Release Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The release process encountered an error. Please check the logs above." >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+        fi

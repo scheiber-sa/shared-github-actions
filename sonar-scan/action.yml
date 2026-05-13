@@ -1,10 +1,6 @@
 name: "Run Sonar Scan"
 description: "Run Sonarqube code quality scan using Scanwise"
 inputs:
-  checkout:
-    description: "Specifies if this action should checkout the code"
-    required: false
-    default: "true"
   sonar-source-path:
     description: "Path to the source code for Sonar scan"
     required: false
@@ -25,33 +21,26 @@ inputs:
     description: "Period for new code analysis"
     required: false
     default: "3d"
-  pre-scan-script:
-    description: "Script to run before scanning (e.g., install dependencies and run tests)"
+  coverage-artifact:
+    description: "Name of the coverage artifact to download. When set, the artifact is downloaded to /tmp/coverage/ and restored into the workspace before scanning."
     required: false
-    default: |
-      echo "📥 Restoring coverage from /tmp/coverage after git clean..."
-      mkdir -p coverage
-      cp /tmp/coverage/lcov.info coverage/lcov.info
-      echo ""
-      echo "📁 Coverage restored:"
-      ls -lh coverage/
-      echo ""
-      if [ -f "coverage/lcov.info" ]; then
-        echo "✅ Coverage file ready for scanning"
-        echo "📊 File size: $(du -h coverage/lcov.info | cut -f1)"
-        echo "📄 Source files: $(grep -c '^SF:' coverage/lcov.info || echo 0)"
-      else
-        echo "❌ Failed to restore coverage file!"
-        exit 1
-      fi
+    default: ""
 
 runs:
   using: "composite"
 
   steps:
-    - name: Checkout if required
-      if: ${{ inputs.checkout == 'true' }}
+    - name: Checkout code
       uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Download coverage artifact
+      if: ${{ inputs.coverage-artifact != '' }}
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.coverage-artifact }}
+        path: /tmp/coverage/
 
     - name: Run Scanwise Sonar Scan
       uses: VIDADv1/scanwise@v1
@@ -61,4 +50,16 @@ runs:
         reports-extensions: ${{ inputs.reports-extensions }}
         reports-retention-days: ${{ inputs.reports-retention-days }}
         new-code-n-days: ${{ inputs.new-code-n-days }}
-        pre-scan-script: ${{ inputs.pre-scan-script }}
+        pre-scan-script: |
+          if [ -f "/tmp/coverage/lcov.info" ]; then
+            echo "📥 Restoring coverage from /tmp/coverage after git clean..."
+            mkdir -p coverage
+            cp /tmp/coverage/lcov.info coverage/lcov.info
+            echo ""
+            echo "📁 Coverage restored:"
+            ls -lh coverage/
+            echo ""
+            echo "✅ Coverage file ready for scanning"
+            echo "📊 File size: $(du -h coverage/lcov.info | cut -f1)"
+            echo "📄 Source files: $(grep -c '^SF:' coverage/lcov.info || echo 0)"
+          fi
