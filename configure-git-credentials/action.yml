@@ -1,0 +1,14 @@
+name: 'Configure git credentials'
+description: 'Configures git to authenticate with GitHub via token, required for npm to resolve private git dependencies'
+
+inputs:
+  github-token:
+    description: 'GitHub token for accessing private repositories'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure git credentials
+      shell: bash
+      run: git config --global url."https://x-access-token:${{ inputs.github-token }}@github.com/".insteadOf "https://github.com/"
