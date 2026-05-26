@@ -1,0 +1,30 @@
+name: 'Delete canary dist-tag'
+description: 'Removes the PR dist-tag from GitHub Packages when a pull request is closed. Requires NODE_AUTH_TOKEN to be set in the environment.'
+
+inputs:
+  package-name:
+    description: 'npm package name (e.g. @scheiber-sa/mb-design-system)'
+    required: true
+  pr-number:
+    description: 'Pull request number'
+    required: true
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@scheiber-sa'
+
+    - name: Remove canary dist-tag
+      shell: bash
+      run: npm dist-tag rm ${{ inputs.package-name }} "pr-${{ inputs.pr-number }}" --registry=https://npm.pkg.github.com || true
+      env:
+        NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}

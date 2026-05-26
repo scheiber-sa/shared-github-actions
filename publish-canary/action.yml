@@ -1,0 +1,17 @@
+name: 'Publish canary to GitHub Packages'
+description: 'Publishes the dist/ directory to GitHub Packages under a PR dist-tag. Requires NODE_AUTH_TOKEN to be set in the environment.'
+
+inputs:
+  pr-number:
+    description: 'Pull request number, used to name the dist-tag (pr-{number})'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Publish canary to GitHub Packages
+      shell: bash
+      working-directory: dist
+      run: npm publish --tag "pr-${{ inputs.pr-number }}" --registry=https://npm.pkg.github.com
+      env:
+        NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}

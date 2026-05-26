@@ -1,0 +1,32 @@
+name: 'Print canary version'
+description: 'Writes a job summary with the canary version and ready-to-use package.json snippets'
+
+inputs:
+  package-name:
+    description: 'npm package name (e.g. @scheiber-sa/mb-design-system)'
+    required: true
+  pr-number:
+    description: 'Pull request number'
+    required: true
+  canary-version:
+    description: 'The canary version string (e.g. 1.0.9-canary.abc1234)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Print canary version
+      shell: bash
+      run: |
+        echo "### 📦 Canary published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Version: \`${{ inputs.canary-version }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Reference it in your app's \`package.json\` using the dist-tag (recommended — updates automatically on each push):" >> $GITHUB_STEP_SUMMARY
+        echo '```json' >> $GITHUB_STEP_SUMMARY
+        echo '"${{ inputs.package-name }}": "pr-${{ inputs.pr-number }}"' >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "Or pin the exact version:" >> $GITHUB_STEP_SUMMARY
+        echo '```json' >> $GITHUB_STEP_SUMMARY
+        echo "\"${{ inputs.package-name }}\": \"${{ inputs.canary-version }}\"" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
