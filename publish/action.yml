@@ -17,9 +17,21 @@ runs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@scheiber-sa'
 
+    - name: Extract dist-tag
+      id: dist-tag
+      shell: bash
+      working-directory: dist
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        if [[ "$VERSION" =~ -(alpha|beta|rc)\. ]]; then
+          echo "tag=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=latest" >> $GITHUB_OUTPUT
+        fi
+
     - name: Publish to GitHub Packages
       shell: bash
-      run: npm publish --registry=https://npm.pkg.github.com
+      run: npm publish --registry=https://npm.pkg.github.com --tag ${{ steps.dist-tag.outputs.tag }}
       working-directory: dist
       env:
         NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}
