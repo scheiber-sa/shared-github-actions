@@ -1,0 +1,27 @@
+name: 'Update dist-tag dependencies'
+description: >
+  Re-resolves any npm dependency whose version specifier is a dist-tag (e.g.
+  `pr-157`, `latest`, `alpha`) rather than a semver range. This keeps CI
+  up-to-date with the latest canary publish without requiring a lock-file
+  commit after every DS change. Semver-pinned dependencies are untouched.
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Update dist-tag dependencies
+      shell: bash
+      run: |
+        PACKAGES=$(node -p "
+          const pkg = require('./package.json');
+          const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+          Object.entries(deps)
+            .filter(([, v]) => !/^[\^~><=0-9]/.test(String(v)))
+            .map(([k]) => k)
+            .join(' ')
+        ")
+        if [ -n "$PACKAGES" ]; then
+          echo "Re-resolving dist-tag packages: $PACKAGES"
+          npm update $PACKAGES
+        else
+          echo "No dist-tag dependencies found, skipping."
+        fi
