@@ -31,6 +31,7 @@ runs:
       uses: scheiber-sa/shared-github-actions/update-dist-tag-deps@master
 
     - name: Prune devDependencies for accurate production SBOM
+      shell: bash
       run: npm prune --production
 
     - name: Generate CycloneDX SBOM with Syft
