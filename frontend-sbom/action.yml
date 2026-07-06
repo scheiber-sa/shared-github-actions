@@ -42,6 +42,7 @@ runs:
         artifact-name: 'sbom.cyclonedx.json'
 
     - name: Execute Grype Scan via Docker
+      shell: bash
       id: run-scan
       run: |
         set +e
@@ -75,6 +76,7 @@ runs:
     # 2. Publication garantie du tableau dans le résumé GitHub (Summary)
     - name: Publish Scan Report to GitHub Summary
       if: always()
+      shell: bash
       run: |
         echo "### 🛡️ Rapport de vulnérabilités SBOM (Grype)" >> $GITHUB_STEP_SUMMARY
         
@@ -97,6 +99,7 @@ runs:
 
     # 3. Blocage contrôlé de la CI
     - name: Enforce Security Gates
+      shell: bash
       run: |
         if [ "${{ steps.run-scan.outputs.scan_exit_code }}" != "0" ]; then
           echo "::error::Pipeline bloqué : Des vulnérabilités critiques non documentées sont présentes. Veuillez consulter le résumé (Summary) de ce build pour voir le tableau complet."
