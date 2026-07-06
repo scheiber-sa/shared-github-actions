@@ -1,9 +1,13 @@
 name: 'Generate SBOM for Frontend'
 description: 'Generates a Software Bill of Materials (SBOM) for the frontend'
 
+inputs:
+  github-token:
+    description: 'GitHub token for accessing private packages. When provided, configures npm for the @scheiber-sa registry.'
+    required: false
+
 runs:
   using: 'composite'    
-  runs-on: ubuntu-latest
   steps:
     - name: Checkout code
       uses: actions/checkout@v6
