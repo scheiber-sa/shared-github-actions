@@ -1,0 +1,106 @@
+name: 'Generate SBOM for Frontend'
+description: 'Generates a Software Bill of Materials (SBOM) for the frontend'
+
+runs:
+  using: 'composite'    
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Configure git credentials for DS git dependency
+      uses: scheiber-sa/shared-github-actions/configure-git-credentials@master
+      with:
+        github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
+
+    - name: Setup and install
+      uses: scheiber-sa/shared-github-actions/npm-install@master
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
+
+    - name: Update dist-tag dependencies
+      uses: scheiber-sa/shared-github-actions/update-dist-tag-deps@master
+
+    - name: Prune devDependencies for accurate production SBOM
+      run: npm prune --production
+
+    - name: Generate CycloneDX SBOM with Syft
+      uses: anchore/sbom-action@v0
+      with:
+        path: .
+        format: 'cyclonedx-json'
+        output-file: 'sbom.cyclonedx.json'
+        artifact-name: 'sbom.cyclonedx.json'
+
+    - name: Execute Grype Scan via Docker
+      id: run-scan
+      run: |
+        set +e
+        
+        if [ -f vex.json ]; then
+          # Extrait proprement la liste des CVE écrites dans votre fichier de projet
+          CVE_LIST=$(grep -oE 'CVE-[0-9]{4}-[0-9]+' vex.json | sort -u | tr '\n' ',' | sed 's/,$//')
+          
+          if [ ! -z "$CVE_LIST" ]; then
+            echo "Filtrage et application des exceptions de votre fichier VEX : $CVE_LIST"
+            docker run --rm \
+              -v "$PWD":/workspace \
+              -w /workspace \
+              anchore/grype:latest sbom:sbom.cyclonedx.json --ignore-vulnerabilities "$CVE_LIST" --fail-on critical -o table > grype-table.txt 2> grype-error.log
+          else
+            docker run --rm \
+              -v "$PWD":/workspace \
+              -w /workspace \
+              anchore/grype:latest sbom:sbom.cyclonedx.json --fail-on critical -o table > grype-table.txt 2> grype-error.log
+          fi
+        else
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace \
+            anchore/grype:latest sbom:sbom.cyclonedx.json --fail-on critical -o table > grype-table.txt 2> grype-error.log
+        fi
+        
+        echo "scan_exit_code=$?" >> $GITHUB_OUTPUT
+        set -e
+
+    # 2. Publication garantie du tableau dans le résumé GitHub (Summary)
+    - name: Publish Scan Report to GitHub Summary
+      if: always()
+      run: |
+        echo "### 🛡️ Rapport de vulnérabilités SBOM (Grype)" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.run-scan.outputs.scan_exit_code }}" != "0" ]; then
+          echo "❌ **Des vulnérabilités critiques non documentées ont été détectées !**" >> $GITHUB_STEP_SUMMARY
+          echo "Consultez le tableau ci-dessous pour identifier les packages NPM restants à corriger." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Aucune vulnérabilité critique non documentée trouvée.**" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+        if [ -f grype-table.txt ] && [ -s grype-table.txt ]; then
+          cat grype-table.txt >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Le rapport de vulnérabilité est vide. Vérification des logs d'erreur de l'outil :" >> $GITHUB_STEP_SUMMARY
+          if [ -f grype-error.log ]; then cat grype-error.log >> $GITHUB_STEP_SUMMARY; fi
+        fi
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+    # 3. Blocage contrôlé de la CI
+    - name: Enforce Security Gates
+      run: |
+        if [ "${{ steps.run-scan.outputs.scan_exit_code }}" != "0" ]; then
+          echo "::error::Pipeline bloqué : Des vulnérabilités critiques non documentées sont présentes. Veuillez consulter le résumé (Summary) de ce build pour voir le tableau complet."
+          exit 1
+        fi
+
+    - name: Upload SBOM artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: project-sbom-package
+        path: |
+          sbom.cyclonedx.json
+          vex.json
+        if-no-files-found: ignore 
+        retention-days: 30
