@@ -2,6 +2,10 @@ name: 'Generate SBOM for Frontend'
 description: 'Generates a Software Bill of Materials (SBOM) for the frontend'
 
 inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: 'latest'
   github-token:
     description: 'GitHub token for accessing private packages. When provided, configures npm for the @scheiber-sa registry.'
     required: false
@@ -15,13 +19,13 @@ runs:
     - name: Configure git credentials for DS git dependency
       uses: scheiber-sa/shared-github-actions/configure-git-credentials@master
       with:
-        github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
+        github-token: ${{ inputs.github-token }}
 
     - name: Setup and install
       uses: scheiber-sa/shared-github-actions/npm-install@master
       with:
-        node-version: ${{ env.NODE_VERSION }}
-        github-token: ${{ secrets.DESIGN_SYSTEM_TOKEN }}
+        node-version: ${{ inputs.node-version }}
+        github-token: ${{ inputs.github-token }}
 
     - name: Update dist-tag dependencies
       uses: scheiber-sa/shared-github-actions/update-dist-tag-deps@master
