@@ -50,6 +50,10 @@ runs:
         reports-extensions: ${{ inputs.reports-extensions }}
         reports-retention-days: ${{ inputs.reports-retention-days }}
         new-code-n-days: ${{ inputs.new-code-n-days }}
+        sonar-options: >
+          -Dsonar.exclusions=node_modules/**,dist/**,.angular/**,coverage/**,**/*.spec.ts,**/*.mock.ts,packages/**
+          -Dsonar.javascript.node.maxspace=4096
+          -Dsonar.scm.exclusions.disabled=true
         pre-scan-script: |
           if [ -f "/tmp/coverage/lcov.info" ]; then
             echo "📥 Restoring coverage from /tmp/coverage after git clean..."
